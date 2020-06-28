@@ -17,6 +17,10 @@ class Player():
         self.y = y
         self. spd = spd
         self.cooldown = cooldown
+        self.hitbox = (self.x + 8, self.y + 8, 16*4, 24*4)
+
+    def draw_hitbox(self, win):
+            pygame.draw.rect(win, (0, 0, 200), self.hitbox, 2)
 
 class Projectile():
     def __init__(self, x, y, direction, spd, variety):
@@ -70,7 +74,7 @@ CENTER_HANDLE = 4 # center origin position
 index = 0 # when drawing sprites
 index_timer = 0 # timer when incrimenting sprites
 
-index_update = 5 # update== sprite every 6 frames (out of 60 FPS (10 sprite frams per second))
+index_update = 6 # update== sprite every 6 frames (out of 60 FPS (10 sprite frams per second))
 
 # shooting cooldown timer used in conjuction with Player.cooldown
 player_1_shoot_timer = 0
@@ -79,8 +83,8 @@ player_2_shoot_timer = 0
 # projectile speed for all players
 proj_spd = 10
 
-player_1 = Player(mode='player', color=(50, 50, 250), x=50, y=win_h/2-25, spd=5, cooldown=60)
-player_2 = Player(mode='player', color=(50, 175, 50), x=win_w-100, y=win_h/2-25, spd=5, cooldown=60)
+player_1 = Player(mode='player', color=(50, 50, 250), x=50, y=win_h/2-25, spd=5, cooldown=10)
+player_2 = Player(mode='player', color=(50, 175, 50), x=win_w-100, y=win_h/2-25, spd=5, cooldown=10)
 
 player_1_has_control = True
 player_2_has_control = True
@@ -117,23 +121,43 @@ while run:
         if event.type == pygame.QUIT:
           run = False
 
-    for bullet in bullets:
-        if bullet.x > 0 and bullet.x < win_w:
-            bullet.x += bullet.vel
-        else:
-            bullets.pop(bullets.index(bullet))
-
-    win.fill((255, 255, 255))   
-
-    for bullet in bullets:
-        if bullet.direction == 1:
-            spr_proj.draw(win, bullet.variety, bullet.x, bullet.y, handle=3)
-        if bullet.direction == -1:
-            spr2_proj.draw(win, bullet.variety, bullet.x, bullet.y, handle=5)
+    win.fill((255, 255, 255))
 
     # draw the character referencing the draw method in the class, SpritSheet()
     spr_knight.draw(win, (index % 4)+7, player_1.x, player_1.y, CENTER_HANDLE)
     spr_orc.draw(win, (index % 4)+7, player_2.x, player_2.y, CENTER_HANDLE)
+
+    # updating hitbox location to the players location
+    player_1.hitbox = (player_1.x-8*4, player_1.y-8*4, 16*4, 24*4)
+    player_1.draw_hitbox(win)
+
+    player_2.hitbox = (player_2.x-8*4, player_2.y-8*4, 16*4, 24*4)
+    player_2.draw_hitbox(win)
+
+    for bullet in bullets:
+        if bullet.direction == 1:
+            if bullet.y - 8*4 < player_2.hitbox[1] + player_2.hitbox[3] and bullet.y + 8*4 > player_2.hitbox[1]:
+                if bullet.x < player_2.hitbox[0] + player_2.hitbox[2] and bullet.x + 16*4 > player_2.hitbox[0]:
+                    print("player_2 hit")
+                    bullets.pop(bullets.index(bullet))
+        if bullet.direction == -1:
+            if bullet.y - 8*4 < player_1.hitbox[1] + player_1.hitbox[3] and bullet.y + 8*4 > player_1.hitbox[1]:
+                if bullet.x - 16*4 < player_1.hitbox[0] + player_1.hitbox[2] and bullet.x > player_1.hitbox[0]:
+                    print("player_1 hit")
+                    bullets.pop(bullets.index(bullet))  
+        if bullet.x > 0 and bullet.x < win_w:
+            bullet.x += bullet.vel
+        else:
+            bullets.pop(bullets.index(bullet))   
+
+    # draw bullets from the bullets list
+    for bullet in bullets:
+        if bullet.direction == 1:
+            spr_proj.draw(win, bullet.variety, bullet.x, bullet.y, handle=3)
+            pygame.draw.rect(win, (0, 0, 200), (bullet.x, bullet.y-8*3, 16*3, 16*3), 2)
+        if bullet.direction == -1:
+            spr2_proj.draw(win, bullet.variety, bullet.x, bullet.y, handle=5)
+            pygame.draw.rect(win, (0, 0, 200), (bullet.x-16*3, bullet.y-8*3, 16*3, 16*3), 2)
 
     # sprite (index) frame rate
     index_timer += 1
@@ -143,6 +167,7 @@ while run:
 
     keys = pygame.key.get_pressed()
 
+    # RPS shoot timers counting down; stops at zero
     if player_1_shoot_timer > 0:
         player_1_shoot_timer -= 1
 
@@ -155,13 +180,13 @@ while run:
         # shooting
         if player_1_shoot_timer <= 0:
             if keys[pygame.K_f]:
-                bullets.append(Projectile(player_1.x+16, player_1.y+16, 1, proj_spd, variety=0)) # rock
+                bullets.append(Projectile(player_1.x+8*4, player_1.y+16, 1, proj_spd, variety=0)) # rock
                 player_1_shoot_timer = player_1.cooldown
             elif keys[pygame.K_g]:
-                bullets.append(Projectile(player_1.x+16, player_1.y+16, 1, proj_spd, variety=1)) # paper
+                bullets.append(Projectile(player_1.x+8*4, player_1.y+16, 1, proj_spd, variety=1)) # paper
                 player_1_shoot_timer = player_1.cooldown
             elif keys[pygame.K_h]:
-                bullets.append(Projectile(player_1.x+16, player_1.y+16, 1, proj_spd, variety=2)) # scissors
+                bullets.append(Projectile(player_1.x+8*4, player_1.y+16, 1, proj_spd, variety=2)) # scissors
                 player_1_shoot_timer = player_1.cooldown
 
         # movement
@@ -180,13 +205,13 @@ while run:
         # shooting
         if player_2_shoot_timer <= 0:
             if keys[pygame.K_RSHIFT]:
-                bullets.append(Projectile(player_2.x-16, player_2.y+16, -1, proj_spd, variety=2)) # rock
+                bullets.append(Projectile(player_2.x-8*4, player_2.y+16, -1, proj_spd, variety=2)) # rock
                 player_2_shoot_timer = player_2.cooldown
             elif keys[pygame.K_RETURN]:
-                bullets.append(Projectile(player_2.x-16, player_2.y+16, -1, proj_spd, variety=1)) # paper
+                bullets.append(Projectile(player_2.x-8*4, player_2.y+16, -1, proj_spd, variety=1)) # paper
                 player_2_shoot_timer = player_2.cooldown
             elif keys[pygame.K_BACKSLASH]:
-                bullets.append(Projectile(player_2.x-16, player_2.y+16, -1, proj_spd, variety=0)) # scissors
+                bullets.append(Projectile(player_2.x-8*4, player_2.y+16, -1, proj_spd, variety=0)) # scissors
                 player_2_shoot_timer = player_2.cooldown
 
         # movement
