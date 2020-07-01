@@ -17,6 +17,7 @@ class Player():
         self.y = y
         self. spd = spd
         self.cooldown = cooldown
+        self.cooldown_timer = 0
         self.hitbox = (self.x-4*3, self.y-4*3, 10*3, 18*3)
 
     def movement_controls(self, left_key, right_key, up_key, down_key):
@@ -29,9 +30,37 @@ class Player():
         if keys[down_key] and self.y < win_h - 64 - self.spd:
             self.y += self.spd
 
-    def draw_hitbox(self, win):
+    def RPS_shoot_controls(self, player):
+        if player == 1:
+            if self.cooldown_timer > 0:
+                self.cooldown_timer -= 1
+            if self.cooldown_timer <= 0:
+                if keys[pygame.K_f]:
+                    bullets.append(Projectile(player_1.x+8*3, player_1.y+16, 1, proj_spd, spr_index=0, variety=1)) # rock
+                    self.cooldown_timer = player_1.cooldown
+                elif keys[pygame.K_g]:
+                    bullets.append(Projectile(player_1.x+8*3, player_1.y+16, 1, proj_spd, spr_index=1, variety=2)) # paper
+                    self.cooldown_timer = player_1.cooldown
+                elif keys[pygame.K_h]:
+                    bullets.append(Projectile(player_1.x+8*3, player_1.y+16, 1, proj_spd, spr_index=2, variety=3)) # scissors
+                    self.cooldown_timer = player_1.cooldown
+        if player == 2:
+            if self.cooldown_timer > 0:
+                self.cooldown_timer -= 1
+            if self.cooldown_timer <= 0:
+                if keys[pygame.K_RSHIFT]:
+                    bullets.append(Projectile(player_2.x-8*3, player_2.y+16, -1, proj_spd, spr_index=2, variety=1)) # rock
+                    self.cooldown_timer = player_2.cooldown
+                elif keys[pygame.K_RETURN]:
+                    bullets.append(Projectile(player_2.x-8*3, player_2.y+16, -1, proj_spd, spr_index=1, variety=2)) # paper
+                    self.cooldown_timer = player_2.cooldown
+                elif keys[pygame.K_BACKSLASH]:
+                    bullets.append(Projectile(player_2.x-8*3, player_2.y+16, -1, proj_spd, spr_index=0, variety=3)) # scissors
+                    self.cooldown_timer = player_2.cooldown
+
+    def set_hitbox(self, win): # for debugging and setting hiboxes
         self.hitbox = (self.x-4*3, self.y-4*3, 10*3, 18*3)
-        pygame.draw.rect(win, (0, 0, 200), self.hitbox, 2)
+        # pygame.draw.rect(win, (0, 0, 200), self.hitbox, 2)
 
 class Projectile():
     def __init__(self, x, y, direction, spd, spr_index, variety):
@@ -43,12 +72,11 @@ class Projectile():
         self.variety = variety
         self.hitbox = (self.x-8*3, self.y-8*3, 16*3, 16*3)
 
-    def draw_hitbox(self, win):
+    def set_hitbox(self, win):
         self.hitbox = (self.x-8*3, self.y-8*3, 16*3, 16*3)
-        pygame.draw.rect(win, (0, 0, 200), self.hitbox, 2)
+        # pygame.draw.rect(win, (0, 0, 200), self.hitbox, 2)
 
-    # decide player 1 and player 2 projectile collisions for the RPS mechanic
-    def bullet_collision(self, targ_bullet, all_bullets):
+    def bullet_collision(self, targ_bullet, all_bullets): # calculate player 1 and player 2 projectile collisions for the RPS mechanic
         for test_bullet in all_bullets:
             if test_bullet == targ_bullet:
                 pass
@@ -59,8 +87,8 @@ class Projectile():
                 elif targ_bullet.direction == -1:
                     player_2_proj = targ_bullet
                     player_1_proj = test_bullet
-                # running math to determine what bullet wins
-                results = (player_1_proj.variety) - (player_2_proj.variety + 10)
+                
+                results = (player_1_proj.variety) - (player_2_proj.variety + 10) # running math to determine what bullet wins
                 if results == -10:
                     all_bullets.pop(all_bullets.index(player_1_proj))
                     all_bullets.pop(all_bullets.index(player_2_proj))
@@ -68,6 +96,28 @@ class Projectile():
                     all_bullets.pop(all_bullets.index(player_2_proj))
                 elif results == -8 or results == -11:
                     all_bullets.pop(all_bullets.index(player_1_proj))
+
+    def player_collision(self, bullets_list):
+        if self.direction == 1: # checking bullet collisions with players
+            if check_collision(self, player_2):
+                bullets_list.pop(bullets_list.index(self))
+        if self.direction == -1:
+            if check_collision(self, player_1):
+                bullets_list.pop(bullets_list.index(self))
+
+    def move_bullet(self, bullets_list):
+        if self.x > 0 and self.x < win_w: # bullet movement
+            self.x += self.vel
+        else:
+            bullets_list.pop(bullets_list.index(self)) # bullet deletion offscreen
+
+    def draw_bullet(self):
+        if self.direction == 1: # draw bullets
+            spr_proj.draw(win, self.spr_index, self.x, self.y, handle=CENTER_HANDLE)
+            self.set_hitbox(win)
+        if bullet.direction == -1:
+            spr2_proj.draw(win, self.spr_index, self.x, self.y, handle=CENTER_HANDLE)
+            self.set_hitbox(win)
 
 class SpriteSheet():
     def __init__(self, sheet, cols, rows):
@@ -96,9 +146,9 @@ def scale_sprite(sprite, sprite_size, cols, rows, scale_factor):
     return pygame.transform.scale(sprite, (cols*sprite_size*scale_factor, rows*sprite_size*scale_factor))
 
 def check_collision(obj1, obj2): # requires objects to have defined hitboxes
-    # collision check on the y-axis
-    if obj1.hitbox[1] < obj2.hitbox[1] + obj2.hitbox[3] and obj1.hitbox[1] + obj1.hitbox[3] > obj2.hitbox[1]:
-        if obj1.hitbox[0] < obj2.hitbox[0] + obj2.hitbox[2] and obj1.hitbox[0] + obj1.hitbox[2] > obj2.hitbox[0]:
+    
+    if obj1.hitbox[1] < obj2.hitbox[1] + obj2.hitbox[3] and obj1.hitbox[1] + obj1.hitbox[3] > obj2.hitbox[1]: # collision check on the y-axis
+        if obj1.hitbox[0] < obj2.hitbox[0] + obj2.hitbox[2] and obj1.hitbox[0] + obj1.hitbox[2] > obj2.hitbox[0]: # collision check on the x-axis
             return True
 
 # def redraw_game_window (needed?)
@@ -120,44 +170,31 @@ index_timer = 0 # timer when incrimenting sprites
 
 index_update = 5 # update sprite every 5 frames (out of 60 FPS (12 sprite frams per second))
 
-# shooting cooldown timer used in conjuction with Player.cooldown
-player_1_shoot_timer = 0
-player_2_shoot_timer = 0
-
-# projectile speed for all players
-proj_spd = 8
-
-player_1 = Player(mode='player', color=(50, 50, 250), x=50, y=win_h/2-25, spd=6, cooldown=40)
-player_2 = Player(mode='player', color=(50, 175, 50), x=win_w-100, y=win_h/2-25, spd=6, cooldown=40)
+player_1 = Player(mode='player', color=(50, 50, 250), x=50, y=win_h/2-25, spd=6, cooldown=60)
+player_2 = Player(mode='player', color=(50, 175, 50), x=win_w-100, y=win_h/2-25, spd=6, cooldown=60)
 
 player_1_has_control = True
 player_2_has_control = True
 
+proj_spd = 8 # projectile speed for all players
+
 # load, scale, and set sprites
-
-# player sprites
-spr_knight_file = pygame.image.load("spr_rpss_knight.png")
+spr_knight_file = pygame.image.load("spr_rpss_knight.png") # player sprites
 spr_orc_file = pygame.image.load("spr_rpss_orc.png")
-
-spr_knight_scaled = scale_sprite(spr_knight_file, 32, 7, 3, 3)
+spr_knight_scaled = scale_sprite(spr_knight_file, 32, 7, 3, 3) # scale sprites
 spr_orc_scaled = scale_sprite(spr_orc_file, 32, 7, 3, 3)
-
-spr_knight = SpriteSheet(spr_knight_scaled, 7, 3)
+spr_knight = SpriteSheet(spr_knight_scaled, 7, 3) # put into a sprite sheet
 spr_orc = SpriteSheet(spr_orc_scaled, 7, 3)
 
-# projectile sprites
-spr_proj_file = pygame.image.load("spr_rpss_projectiles.png")
+spr_proj_file = pygame.image.load("spr_rpss_projectiles.png") # projectile sprites
 spr_proj_scaled = scale_sprite(spr_proj_file, 32, 3, 1, 3)
 spr_proj = SpriteSheet(spr_proj_scaled, 3, 1)
-
-spr2_proj_flipped = pygame.transform.flip(spr_proj_scaled, True, False)
+spr2_proj_flipped = pygame.transform.flip(spr_proj_scaled, True, False) # flip projectiles for player 2
 spr2_proj = SpriteSheet(spr2_proj_flipped, 3, 1)
 
-# bullet object list
-bullets = []
+bullets = []# bullet object list
 
-# main run loop thingy
-run = True
+run = True # main run loop thingy
 while run:
     clock.tick(FPS)
 
@@ -167,39 +204,35 @@ while run:
 
     win.fill((200, 200, 200))
 
-    # draw the character referencing the draw method in the class, SpritSheet()
-    spr_knight.draw(win, (index % 4)+7, player_1.x, player_1.y, CENTER_HANDLE)
+    spr_knight.draw(win, (index % 4)+7, player_1.x, player_1.y, CENTER_HANDLE) # draw the character referencing the draw method in the class, SpritSheet()
     spr_orc.draw(win, (index % 4)+7, player_2.x, player_2.y, CENTER_HANDLE)
-
-    # updating hitbox location to the players location
-    player_1.draw_hitbox(win)
-    player_2.draw_hitbox(win)
-
-
-    # checking bullet collisions with one another
-    for bullet in bullets:
-        bullet.bullet_collision(targ_bullet=bullet, all_bullets=bullets)
+    player_1.set_hitbox(win)
+    player_2.set_hitbox(win)
 
     for bullet in bullets:
-        if bullet.direction == 1:
-            if check_collision(bullet, player_2):
-                bullets.pop(bullets.index(bullet))
-        elif bullet.direction == -1:
-            if check_collision(bullet, player_1):
-                bullets.pop(bullets.index(bullet))
-        if bullet.x > 0 and bullet.x < win_w:
-            bullet.x += bullet.vel
-        else:
-            bullets.pop(bullets.index(bullet))   
+        bullet.bullet_collision(targ_bullet=bullet, all_bullets=bullets) # checking bullet collisions with one another
 
-    # draw bullets from the bullets list
-    for bullet in bullets:
-        if bullet.direction == 1:
-            spr_proj.draw(win, bullet.spr_index, bullet.x, bullet.y, handle=CENTER_HANDLE)
-            bullet.draw_hitbox(win)
-        if bullet.direction == -1:
-            spr2_proj.draw(win, bullet.spr_index, bullet.x, bullet.y, handle=CENTER_HANDLE)
-            bullet.draw_hitbox(win)
+        bullet.player_collision(bullets)
+        bullet.move_bullet(bullets)
+        bullet.draw_bullet()
+        # if bullet.direction == 1: # checking bullet collisions with players
+        #     if check_collision(bullet, player_2):
+        #         bullets.pop(bullets.index(bullet))
+        # if bullet.direction == -1:
+        #     if check_collision(bullet, player_1):
+        #         bullets.pop(bullets.index(bullet))
+        
+        # if bullet.x > 0 and bullet.x < win_w: # bullet movement and deletion offscreen
+        #     bullet.x += bullet.vel
+        # else:
+        #     bullets.pop(bullets.index(bullet)) 
+
+        # if bullet.direction == 1: # draw bullets from the bullets list
+        #     spr_proj.draw(win, bullet.spr_index, bullet.x, bullet.y, handle=CENTER_HANDLE)
+        #     bullet.set_hitbox(win)
+        # if bullet.direction == -1:
+        #     spr2_proj.draw(win, bullet.spr_index, bullet.x, bullet.y, handle=CENTER_HANDLE)
+        #     bullet.set_hitbox(win)
 
     # sprite (index) frame rate
     index_timer += 1
@@ -209,47 +242,14 @@ while run:
 
     keys = pygame.key.get_pressed()
 
-    # RPS shoot timers counting down; stops at zero
-    if player_1_shoot_timer > 0:
-        player_1_shoot_timer -= 1
-
-    if player_2_shoot_timer > 0:
-        player_2_shoot_timer -= 1
-
-    # player 1 controls (and screen boundaries)
+    # player 1 controls (movement, screen boundaries, shooting)
     if player_1_has_control:
-
-        # shooting
-        if player_1_shoot_timer <= 0:
-            if keys[pygame.K_f]:
-                bullets.append(Projectile(player_1.x+8*3, player_1.y+16, 1, proj_spd, spr_index=0, variety=1)) # rock
-                player_1_shoot_timer = player_1.cooldown
-            elif keys[pygame.K_g]:
-                bullets.append(Projectile(player_1.x+8*3, player_1.y+16, 1, proj_spd, spr_index=1, variety=2)) # paper
-                player_1_shoot_timer = player_1.cooldown
-            elif keys[pygame.K_h]:
-                bullets.append(Projectile(player_1.x+8*3, player_1.y+16, 1, proj_spd, spr_index=2, variety=3)) # scissors
-                player_1_shoot_timer = player_1.cooldown
-
-        # movement
+        player_1.RPS_shoot_controls(1)
         player_1.movement_controls(pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_s)
  
-    # player 2 controls (and screen boundaries)
+    # player 2 controls (movement, screen boundaries, shooting)
     if player_2_has_control:
-
-        # shooting
-        if player_2_shoot_timer <= 0:
-            if keys[pygame.K_RSHIFT]:
-                bullets.append(Projectile(player_2.x-8*3, player_2.y+16, -1, proj_spd, spr_index=2, variety=1)) # rock
-                player_2_shoot_timer = player_2.cooldown
-            elif keys[pygame.K_RETURN]:
-                bullets.append(Projectile(player_2.x-8*3, player_2.y+16, -1, proj_spd, spr_index=1, variety=2)) # paper
-                player_2_shoot_timer = player_2.cooldown
-            elif keys[pygame.K_BACKSLASH]:
-                bullets.append(Projectile(player_2.x-8*3, player_2.y+16, -1, proj_spd, spr_index=0, variety=3)) # scissors
-                player_2_shoot_timer = player_2.cooldown
-
-        # movement
+        player_2.RPS_shoot_controls(2)
         player_2.movement_controls(pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN)
 
     pygame.display.update()
