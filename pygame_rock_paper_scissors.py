@@ -192,7 +192,7 @@ spr_proj = SpriteSheet(spr_proj_scaled, 3, 1)
 spr2_proj_flipped = pygame.transform.flip(spr_proj_scaled, True, False) # flip projectiles for player 2
 spr2_proj = SpriteSheet(spr2_proj_flipped, 3, 1)
 
-bullets = []# bullet object list
+bullets = [] # bullet object list
 
 run = True # main run loop thingy
 while run:
@@ -203,6 +203,12 @@ while run:
           run = False
 
     win.fill((200, 200, 200))
+
+        # sprite (index) frame rate
+    index_timer += 1
+    if index_timer >= index_update:
+        index_timer = 0
+        index += 1
 
     spr_knight.draw(win, (index % 4)+7, player_1.x, player_1.y, CENTER_HANDLE) # draw the character referencing the draw method in the class, SpritSheet()
     spr_orc.draw(win, (index % 4)+7, player_2.x, player_2.y, CENTER_HANDLE)
@@ -215,30 +221,6 @@ while run:
         bullet.player_collision(bullets)
         bullet.move_bullet(bullets)
         bullet.draw_bullet()
-        # if bullet.direction == 1: # checking bullet collisions with players
-        #     if check_collision(bullet, player_2):
-        #         bullets.pop(bullets.index(bullet))
-        # if bullet.direction == -1:
-        #     if check_collision(bullet, player_1):
-        #         bullets.pop(bullets.index(bullet))
-        
-        # if bullet.x > 0 and bullet.x < win_w: # bullet movement and deletion offscreen
-        #     bullet.x += bullet.vel
-        # else:
-        #     bullets.pop(bullets.index(bullet)) 
-
-        # if bullet.direction == 1: # draw bullets from the bullets list
-        #     spr_proj.draw(win, bullet.spr_index, bullet.x, bullet.y, handle=CENTER_HANDLE)
-        #     bullet.set_hitbox(win)
-        # if bullet.direction == -1:
-        #     spr2_proj.draw(win, bullet.spr_index, bullet.x, bullet.y, handle=CENTER_HANDLE)
-        #     bullet.set_hitbox(win)
-
-    # sprite (index) frame rate
-    index_timer += 1
-    if index_timer >= index_update:
-        index_timer = 0
-        index += 1
 
     keys = pygame.key.get_pressed()
 
