@@ -8,9 +8,6 @@ Made by Oscar-Vinh Nguyen
 
 import pygame
 import time
-pygame.font.init()
-
-score = 0
 
 class Player():
     def __init__(self, mode, color, x, y, spd, cooldown):
@@ -95,25 +92,18 @@ class Projectile():
                 if results == -10:
                     all_bullets.pop(all_bullets.index(player_1_proj))
                     all_bullets.pop(all_bullets.index(player_2_proj))
-                    global score
-                    score += 500
                 elif results == -12 or results == -9:
                     all_bullets.pop(all_bullets.index(player_2_proj))
-                    score += 1000
                 elif results == -8 or results == -11:
                     all_bullets.pop(all_bullets.index(player_1_proj))
-                    score += 1000
 
     def player_collision(self, bullets_list):
         if self.direction == 1: # checking bullet collisions with players
             if check_collision(self, player_2):
                 bullets_list.pop(bullets_list.index(self))
-                global score
-                score += 10000
         if self.direction == -1:
             if check_collision(self, player_1):
                 bullets_list.pop(bullets_list.index(self))
-                score += 10000
 
     def move_bullet(self, bullets_list):
         if self.x > 0 and self.x < win_w: # bullet movement
@@ -151,10 +141,6 @@ class SpriteSheet():
     def draw(self, surface, cell_index, x, y, handle=0):
         surface.blit(self.sheet, (x+self.handle[handle][0], y+self.handle[handle][1]), self.cells[cell_index])
 
-def draw_text():
-    score_label = main_font.render(f"Score: {score}", 1, (0,0,0))
-    win.blit(score_label, (10, 10)) 
-
 def scale_sprite(sprite, sprite_size, cols, rows, scale_factor):
     """scale a sprite given the arguments"""
     return pygame.transform.scale(sprite, (cols*sprite_size*scale_factor, rows*sprite_size*scale_factor))
@@ -173,8 +159,6 @@ win_h = 756
 win = pygame.display.set_mode((win_w, win_h))
 
 pygame.display.set_caption("Rock, Paper, Scissors, Shoot")
-
-main_font = pygame.font.SysFont("timesnewroman", 50)
 
 FPS = 60 # 60 frames per second that will be set later in the run loop: clock.tick(FPS)
 clock = pygame.time.Clock()
@@ -210,21 +194,15 @@ spr2_proj = SpriteSheet(spr2_proj_flipped, 3, 1)
 
 bullets = [] # bullet object list
 
-run = True
+run = True # main run loop thingy
 while run:
     clock.tick(FPS)
 
-    keys = pygame.key.get_pressed()
-
-    if keys[pygame.K_ESCAPE]:
-        run = False
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
           run = False
 
     win.fill((200, 200, 200))
-
-    draw_text()
 
         # sprite (index) frame rate
     index_timer += 1
@@ -243,6 +221,8 @@ while run:
         bullet.player_collision(bullets)
         bullet.move_bullet(bullets)
         bullet.draw_bullet()
+
+    keys = pygame.key.get_pressed()
 
     # player 1 controls (movement, screen boundaries, shooting)
     if player_1_has_control:
