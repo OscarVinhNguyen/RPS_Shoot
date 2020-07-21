@@ -4,12 +4,11 @@ Made by Oscar-Vinh Nguyen
 07/20/2020
 """
 
-
-
 import pygame
 import time
-pygame.font.init()
 
+
+pygame.font.init()
 score = 0
 
 class Player():
@@ -18,7 +17,7 @@ class Player():
         self.color = color
         self.x = x
         self.y = y
-        self. spd = spd
+        self.spd = spd
         self.cooldown = cooldown
         self.cooldown_timer = 0
         self.hitbox = (self.x-4*3, self.y-4*3, 10*3, 18*3)
@@ -165,7 +164,7 @@ def check_collision(obj1, obj2): # requires objects to have defined hitboxes
         if obj1.hitbox[0] < obj2.hitbox[0] + obj2.hitbox[2] and obj1.hitbox[0] + obj1.hitbox[2] > obj2.hitbox[0]: # collision check on the x-axis
             return True
 
-# def redraw_game_window (needed?)
+# TODO (needed?): def redraw_game_window
 
 # variables
 win_w = 1280
@@ -226,7 +225,7 @@ while run:
 
     draw_text()
 
-        # sprite (index) frame rate
+    # sprite (index) frame rate
     index_timer += 1
     if index_timer >= index_update:
         index_timer = 0
